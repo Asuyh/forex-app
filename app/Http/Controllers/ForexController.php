@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Servieces\NrbForexServiece;
+use App\Services\NrbForexService;
 
 class ForexController extends Controller
 {
-    public function index(Request $request, NrbForexService $serviece)
+    public function index(Request $request, NrbForexService $service)
     {
-        $request-> validate([
-            'form' => 'nullable | date_format:y-m-d',
-            'to' => 'nullable | date_format:y-m-d',
-        ]);
+        $from = $request->get('from');
+        $to   = $request->get('to');
 
-        $from = $request->input('from', now()->subDays(7)->format(y-m-d));
-        $to = $request->input('to',now()->format(y-m-d));
+        $data = [];
 
-        $data = $serviece->fetchRates($from, $to);
-        return view('forex.index', compact('data', 'from', 'to'));
+        if ($from && $to) {
+            $data = $service->fetchRates($from, $to);
+        }
+
+        return view('forex.index', compact('from', 'to', 'data'));
     }
 }

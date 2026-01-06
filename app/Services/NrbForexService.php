@@ -6,34 +6,25 @@ use Illuminate\Support\Facades\Http;
 
 class NrbForexService
 {
-    protected string $baseUrl;
-
-    public function __construct()
+    public function fetchRates(string $from, string $to, int $page = 1, int $perPage = 100): array
     {
-        $this->baseUrl = config('services.nrb_forex.base_url');
-    }
-
-    public function fetchRates(
-        string $from,
-        string $to,
-        int $page = 1,
-        int $perPage = 10
-    ): array {
-        $response = Http::get($this->baseUrl . '/rates', [
-            'from'     => $from,
-            'to'       => $to,
-            'page'     => $page,
+        $response = Http::get(config('forex.nrb_base_url') . '/rates', [
+            'from' => $from,
+            'to' => $to,
+            'page' => $page,
             'per_page' => $perPage,
         ]);
 
         if ($response->failed()) {
             return [
                 'error' => true,
-                'status' => $response->status(),
                 'body' => $response->json(),
             ];
         }
 
-        return $response->json();
+        return [
+            'error' => false,
+            'body' => $response->json(),
+        ];
     }
 }
