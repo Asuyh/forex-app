@@ -1,129 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <title>NRB Forex Rates</title>
+    <title>Nepal Rastra Bank - Forex Rates</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .notice { margin: 10px 0; padding: 10px; background-color: #fffae6; border: 1px solid #ffd42a; }
+    </style>
 </head>
+<body>
 
-<body class="bg-gray-100">
-<div class="max-w-6xl mx-auto p-6">
+<h1>Nepal Rastra Bank - Foreign Exchange Rates</h1>
 
-    <h1 class="text-2xl font-bold text-blue-700 mb-6">
-        Nepal Rastra Bank - Foreign Exchange Rates
-    </h1>
+<form method="get" action="{{ route('forex.index') }}">
+    From: <input type="date" name="from" value="{{ $from }}">
+    To: <input type="date" name="to" value="{{ $to }}">
+    <button type="submit">Fetch Rates</button>
+</form>
 
-    <form method="GET" class="flex flex-wrap gap-4 items-end mb-8 bg-white p-4 rounded shadow-sm border border-blue-100">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
-            <input
-                type="date"
-                name="from"
-                value="{{ $from }}"
-                class="border border-gray-300 rounded px-3 py-2"
-            >
-        </div>
+@if($to !== $latestAvailableDate)
+    <div class="notice" id="latestNotice">
+        Note: The latest available forex data is for <strong>{{ $latestAvailableDate }}</strong>. Data for your selected 'To' date is not yet published.
+    </div>
+@endif
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
-            <input
-                type="date"
-                name="to"
-                value="{{ $to }}"
-                class="border border-gray-300 rounded px-3 py-2"
-            >
-        </div>
-
-        <div>
-            <button
-                type="submit"
-                class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
-                Fetch Rates
-            </button>
-        </div>
-    </form>
-
-    <!-- Error Statement print -->
-    @if(!empty($data) && $data['error'])
-        <div class="p-4 mb-6 border border-red-300 bg-red-50 text-red-700 rounded">
-            Failed to fetch forex data from NRB.
-        </div>
+<div id="forexTables">
+    @if(count($forexData) === 0)
+        <p>No forex data available for the selected range.</p>
     @endif
 
-    <!-- forex data no Published Yet -->
-    @if(!empty($data) && !$data['error'] && empty($data['body']['data']['payload']))
-        <div class="p-4 mb-6 border border-yellow-300 bg-yellow-50 text-yellow-800 rounded">
-            Forex rates for the selected date have not been published yet.
-        </div>
-    @endif
-
-    <!-- Forex Tables -->
-    @if(!empty($data) && !$data['error'] && !empty($data['body']['data']['payload']))
-
-        @foreach($data['body']['data']['payload'] as $day)
-
-            <!-- Date Header -->
-            <div class="mt-10 mb-3 border-b border-blue-200 pb-1">
-                <h3 class="text-lg font-semibold text-blue-700">
-                    Forex Rates — {{ $day['date'] }}
-                </h3>
-            </div>
-
-            <!-- Table -->
-            <div class="overflow-x-auto bg-white rounded shadow-sm">
-                <table class="min-w-full border border-blue-200 text-sm">
-                    <thead class="bg-blue-50 text-blue-800">
-                        <tr>
-                            <th class="border border-blue-200 px-4 py-2 text-left">
-                                Currency
-                            </th>
-                            <th class="border border-blue-200 px-4 py-2 text-center">
-                                Unit
-                            </th>
-                            <th class="border border-blue-200 px-4 py-2 text-right">
-                                Buying (NPR)
-                            </th>
-                            <th class="border border-blue-200 px-4 py-2 text-right">
-                                Selling (NPR)
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach($day['rates'] as $rate)
-                            <tr class="hover:bg-blue-50 transition">
-                                <td class="border border-blue-200 px-4 py-2">
-                                    <div class="font-medium text-gray-800">
-                                        {{ $rate['currency']['name'] }}
-                                    </div>
-                                    <div class="text-xs text-gray-500">
-                                        {{ $rate['currency']['iso3'] }}
-                                    </div>
-                                </td>
-
-                                <td class="border border-blue-200 px-4 py-2 text-center">
-                                    {{ $rate['currency']['unit'] }}
-                                </td>
-
-                                <td class="border border-blue-200 px-4 py-2 text-right">
-                                    {{ number_format($rate['buy'], 2) }}
-                                </td>
-
-                                <td class="border border-blue-200 px-4 py-2 text-right">
-                                    {{ number_format($rate['sell'], 2) }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-        @endforeach
-
-    @endif
-
+    @foreach($forexData as $day)
+        <h2>Forex Rates — {{ $day['date'] }}</h2>
+        <table>
+            <tr>
+                <th>Currency</th>
+                <th>Unit</th>
+                <th>Buying (NPR)</th>
+                <th>Selling (NPR)</th>
+            </tr>
+            @foreach($day['rates'] as $rate)
+                <tr>
+                    <td>{{ $rate['currency']['name'] }} ({{ $rate['currency']['iso3'] }})</td>
+                    <td>{{ $rate['currency']['unit'] }}</td>
+                    <td>{{ number_format($rate['buy'], 2) }}</td>
+                    <td>{{ number_format($rate['sell'], 2) }}</td>
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
 </div>
+
+<script>
+    // Auto-refresh every 5 minutes (300000 ms)
+    setInterval(function(){
+        fetch(window.location.href)
+        .then(response => response.text())
+        .then(html => {
+            // Parse HTML
+            let parser = new DOMParser();
+            let doc = parser.parseFromString(html, 'text/html');
+
+            // Update forex tables
+            let newTables = doc.getElementById('forexTables').innerHTML;
+            document.getElementById('forexTables').innerHTML = newTables;
+
+            // Update notice if any
+            let newNotice = doc.getElementById('latestNotice');
+            if(newNotice){
+                document.getElementById('latestNotice').innerHTML = newNotice.innerHTML;
+            }
+
+        })
+        .catch(err => console.log('Error fetching updated forex data:', err));
+    }, 300000); // every 5 minutes
+</script>
+
 </body>
 </html>
