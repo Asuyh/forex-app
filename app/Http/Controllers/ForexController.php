@@ -9,8 +9,6 @@ class ForexController extends Controller
 {
     public function index(Request $request)
     {
-      
-
         $today = now()->format('Y-m-d');
 
         $todayResponse = Http::get('https://www.nrb.org.np/api/forex/v1/rates', [
@@ -22,10 +20,12 @@ class ForexController extends Controller
 
         $todayForex = $todayResponse->json()['data']['payload'][0]['rates'] ?? [];
 
+
         // Default dates
         $from = $request->get('from') ?? now()->subDays(7)->format('Y-m-d');
         $to   = $request->get('to') ?? now()->format('Y-m-d');
 
+        // NRB publishes only completed-day data
         $latestAvailableDate = $to;
 
         if ($to >= $today) {

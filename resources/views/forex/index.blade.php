@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Nepal Rastra Bank - Forex Rates</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <style>
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
@@ -11,7 +13,62 @@
 </head>
 <body>
 
-<h1>Nepal Rastra Bank - Foreign Exchange Rates</h1>
+<h2>Today's Forex Rates ({{ $today }})</h2>
+
+@if(count($todayForex) === 0)
+    <p><strong>No forex data published yet for today.</strong></p>
+@else
+<table>
+    <tr>
+        <th>Currency</th>
+        <th>Unit</th>
+        <th>Buying (NPR)</th>
+        <th>Selling (NPR)</th>
+    </tr>
+    @foreach($todayForex as $rate)
+        <tr>
+            <td>{{ $rate['currency']['name'] }} ({{ $rate['currency']['iso3'] }})</td>
+            <td>{{ $rate['currency']['unit'] }}</td>
+            <td>{{ number_format($rate['buy'], 2) }}</td>
+            <td>{{ number_format($rate['sell'], 2) }}</td>
+        </tr>
+    @endforeach
+</table>
+
+<hr>
+
+<h2>Currency Converter (Based on Today’s Rates)</h2>
+
+<form id="converterForm">
+    <input type="number" id="amount" placeholder="Amount" step="any" required>
+
+    <select id="fromCurrency">
+        <option value="NPR">NPR</option>
+        @foreach($todayForex as $rate)
+            <option value="{{ $rate['currency']['iso3'] }}">
+                {{ $rate['currency']['iso3'] }}
+            </option>
+        @endforeach
+    </select>
+
+    <select id="toCurrency">
+        <option value="NPR">NPR</option>
+        @foreach($todayForex as $rate)
+            <option value="{{ $rate['currency']['iso3'] }}">
+                {{ $rate['currency']['iso3'] }}
+            </option>
+        @endforeach
+    </select>
+
+    <button type="button" id="convertBtn">Convert</button>
+</form>
+
+<p id="conversionResult"></p>
+@endif
+
+<hr>
+
+<h1>Historical Forex Rates</h1>
 
 <form method="get" action="{{ route('forex.index') }}">
     From: <input type="date" name="from" value="{{ $from }}">
@@ -21,60 +78,38 @@
 
 @if($to !== $latestAvailableDate)
     <div class="notice" id="latestNotice">
-        Note: The latest available forex data is for <strong>{{ $latestAvailableDate }}</strong>. Data for your selected 'To' date is not yet published.
+        Latest available forex data is for <strong>{{ $latestAvailableDate }}</strong>.
     </div>
 @endif
 
 <div id="forexTables">
-    @if(count($forexData) === 0)
-        <p>No forex data available for the selected range.</p>
-    @endif
-
-    @foreach($forexData as $day)
-        <h2>Forex Rates — {{ $day['date'] }}</h2>
-        <table>
+@foreach($forexData as $day)
+    <h2>Forex Rates — {{ $day['date'] }}</h2>
+    <table>
+        <tr>
+            <th>Currency</th>
+            <th>Unit</th>
+            <th>Buying (NPR)</th>
+            <th>Selling (NPR)</th>
+        </tr>
+        @foreach($day['rates'] as $rate)
             <tr>
-                <th>Currency</th>
-                <th>Unit</th>
-                <th>Buying (NPR)</th>
-                <th>Selling (NPR)</th>
+                <td>{{ $rate['currency']['name'] }} ({{ $rate['currency']['iso3'] }})</td>
+                <td>{{ $rate['currency']['unit'] }}</td>
+                <td>{{ number_format($rate['buy'], 2) }}</td>
+                <td>{{ number_format($rate['sell'], 2) }}</td>
             </tr>
-            @foreach($day['rates'] as $rate)
-                <tr>
-                    <td>{{ $rate['currency']['name'] }} ({{ $rate['currency']['iso3'] }})</td>
-                    <td>{{ $rate['currency']['unit'] }}</td>
-                    <td>{{ number_format($rate['buy'], 2) }}</td>
-                    <td>{{ number_format($rate['sell'], 2) }}</td>
-                </tr>
-            @endforeach
-        </table>
-    @endforeach
+        @endforeach
+    </table>
+@endforeach
 </div>
 
+{{-- Pass forex data safely to JS --}}
 <script>
-    // Auto-refresh every 5 minutes (300000 ms)
-    setInterval(function(){
-        fetch(window.location.href)
-        .then(response => response.text())
-        .then(html => {
-            // Parse HTML
-            let parser = new DOMParser();
-            let doc = parser.parseFromString(html, 'text/html');
-
-            // Update forex tables
-            let newTables = doc.getElementById('forexTables').innerHTML;
-            document.getElementById('forexTables').innerHTML = newTables;
-
-            // Update notice if any
-            let newNotice = doc.getElementById('latestNotice');
-            if(newNotice){
-                document.getElementById('latestNotice').innerHTML = newNotice.innerHTML;
-            }
-
-        })
-        .catch(err => console.log('Error fetching updated forex data:', err));
-    }, 300000); // every 5 minutes
+    window.todayForexRates = @json($todayForex);
 </script>
+
+<script src="{{ asset('js/app.js') }}"></script>
 
 </body>
 </html>
