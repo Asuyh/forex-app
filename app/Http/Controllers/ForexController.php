@@ -43,12 +43,14 @@ class ForexController extends Controller
         $forexData = $response->json()['data']['payload'] ?? [];
 
         return view('forex.index', [
-            'today'               => $today,
-            'todayForex'          => $todayForex,
-            'from'                => $from,
-            'to'                  => $to,
-            'forexData'           => $forexData,
-            'latestAvailableDate' => $latestAvailableDate,
-        ]);
+    'from' => $from,
+    'to' => $to,
+    'forexData' => $forexData,
+    'latestAvailableDate' => $latestAvailableDate,
+    'todayForex' => $todayForex,
+    'today' => $today,
+    'showHistory' => $request->has('from') && $request->has('to')
+]);
+
     }
 }

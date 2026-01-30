@@ -37,7 +37,7 @@
 
 <hr>
 
-<h2>Currency Converter (Based on Today’s Rates)</h2>
+<h2>Currency Converter (Based on Today's Rates)</h2>
 
 <form id="converterForm">
     <input type="number" id="amount" placeholder="Amount" step="any" required>
@@ -82,6 +82,7 @@
     </div>
 @endif
 
+@if($showHistory)
 <div id="forexTables">
 @foreach($forexData as $day)
     <h2>Forex Rates — {{ $day['date'] }}</h2>
@@ -103,6 +104,7 @@
     </table>
 @endforeach
 </div>
+@endif
 
 {{-- Pass forex data safely to JS --}}
 <script>
